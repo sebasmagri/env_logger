@@ -528,6 +528,12 @@ impl Builder {
         self
     }
 
+    /// Whether or not to write key-value pairs in the default format.
+    pub fn default_format_key_values(&mut self, write: bool) -> &mut Self {
+        self.format.default_format_key_values = write;
+        self
+    }
+
     /// Adds a directive to the filter for a specific module.
     ///
     /// # Examples

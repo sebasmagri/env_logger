@@ -35,7 +35,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Display;
 
-use log::Record;
+use log::{kv, Record};
 
 pub(crate) mod writer;
 mod humantime;
@@ -117,6 +117,7 @@ pub(crate) struct Builder {
     pub default_format_timestamp_nanos: bool,
     pub default_format_module_path: bool,
     pub default_format_level: bool,
+    pub default_format_key_values: bool,
     pub custom_format: Option<Box<Fn(&mut Formatter, &Record) -> io::Result<()> + Sync + Send>>,
     built: bool,
 }
@@ -128,6 +129,7 @@ impl Default for Builder {
             default_format_timestamp_nanos: false,
             default_format_module_path: true,
             default_format_level: true,
+            default_format_key_values: true,
             custom_format: None,
             built: false,
         }
@@ -158,6 +160,7 @@ impl Builder {
                     timestamp_nanos: built.default_format_timestamp_nanos,
                     module_path: built.default_format_module_path,
                     level: built.default_format_level,
+                    key_values: built.default_format_key_values,
                     written_header_value: false,
                     buf,
                 };
@@ -182,6 +185,7 @@ struct DefaultFormat<'a> {
     level: bool,
     timestamp_nanos: bool,
     written_header_value: bool,
+    key_values: bool,
     buf: &'a mut Formatter,
 }
 
@@ -190,6 +194,7 @@ impl<'a> DefaultFormat<'a> {
         self.write_timestamp()?;
         self.write_level(record)?;
         self.write_module_path(record)?;
+        self.write_kv(record)?;
         self.finish_header()?;
 
         self.write_args(record)
@@ -289,6 +294,28 @@ impl<'a> DefaultFormat<'a> {
     fn write_args(&mut self, record: &Record) -> io::Result<()> {
         writeln!(self.buf, "{}", record.args())
     }
+
+    fn write_kv(&mut self, record: &Record) -> io::Result<()> {
+        if !self.key_values {
+            return Ok(())
+        }
+        let kvs = record.key_values();
+        if !self.written_header_value && kvs.count() > 0 {
+            self.written_header_value = true;
+            let open_brace = self.subtle_style("[");
+            write!(self.buf, "{}", open_brace)?;
+        }
+        // Ideally we would be able to transport the original io::Error through the visit
+        kvs.visit(&mut KeyValueVisitor(self.buf)).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+    }
+}
+
+struct KeyValueVisitor<'a>(&'a mut Formatter);
+
+impl<'a, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'a> {
+    fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
+        write!(self.0, " {}={}", key, value).map_err(|_| kv::Error::msg("printing failed"))
+    }
 }
 
 #[cfg(test)]
@@ -299,9 +326,11 @@ mod tests {
 
     fn write(fmt: DefaultFormat) -> String {
         let buf = fmt.buf.buf.clone();
+        let kvs = &[("a", 1u32), ("b", 2u32)][..];
 
         let record = Record::builder()
             .args(format_args!("log message"))
+            .key_values(&kvs)
             .level(Level::Info)
             .file(Some("test.rs"))
             .line(Some(144))
@@ -327,11 +356,12 @@ mod tests {
             timestamp_nanos: false,
             module_path: true,
             level: true,
+            key_values: true,
             written_header_value: false,
             buf: &mut f,
         });
 
-        assert_eq!("[INFO  test::path] log message\n", written);
+        assert_eq!("[INFO  test::path a=1 b=2] log message\n", written);
     }
 
     #[test]
@@ -347,6 +377,7 @@ mod tests {
             timestamp_nanos: false,
             module_path: false,
             level: false,
+            key_values: false,
             written_header_value: false,
             buf: &mut f,
         });

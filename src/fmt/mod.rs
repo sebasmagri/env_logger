@@ -138,7 +138,7 @@ impl Default for Builder {
 
 impl Builder {
     /// Convert the format into a callable function.
-    /// 
+    ///
     /// If the `custom_format` is `Some`, then any `default_format` switches are ignored.
     /// If the `custom_format` is `None`, then a default format is returned.
     /// Any `default_format` switches set to `false` won't be written by the format.
@@ -177,7 +177,7 @@ type SubtleStyle = StyledValue<'static, &'static str>;
 type SubtleStyle = &'static str;
 
 /// The default format.
-/// 
+///
 /// This format needs to work with any combination of crate features.
 struct DefaultFormat<'a> {
     timestamp: bool,
@@ -305,8 +305,7 @@ impl<'a> DefaultFormat<'a> {
             let open_brace = self.subtle_style("[");
             write!(self.buf, "{}", open_brace)?;
         }
-        // Ideally we would be able to transport the original io::Error through the visit
-        kvs.visit(&mut KeyValueVisitor(self.buf)).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+        kvs.visit(&mut KeyValueVisitor(self.buf)).map_err(|e| e.into())
     }
 }
 
@@ -314,7 +313,7 @@ struct KeyValueVisitor<'a>(&'a mut Formatter);
 
 impl<'a, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'a> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
-        write!(self.0, " {}={}", key, value).map_err(|_| kv::Error::msg("printing failed"))
+        write!(self.0, " {}={}", key, value).map_err(|e| e.into())
     }
 }
 

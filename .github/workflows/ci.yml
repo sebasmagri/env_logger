@@ -112,3 +112,43 @@ jobs:
         with:
           command: run
           args: --example default
+
+  wasm-browser-test:
+    name: test wasm support for browser
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser:
+          - firefox
+          - chrome
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install wasm-pack
+        uses: actions-rs/install@v0.1
+        with:
+          crate: wasm-pack
+          version: latest
+          use-tool-cache: true
+
+      - name: Test on browser
+        run: wasm-pack test --headless --${{ matrix.browser }} -- --no-default-features --test web
+
+  wasm-node-test:
+    name: test wasm support for node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install wasm-pack
+        uses: actions-rs/install@v0.1
+        with:
+          crate: wasm-pack
+          version: latest
+          use-tool-cache: true
+
+      - name: Test on node
+        run: wasm-pack test --node -- --no-default-features --test node

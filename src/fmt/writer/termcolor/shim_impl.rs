@@ -1,5 +1,7 @@
 use std::io;
 
+#[cfg(all(target_arch = "wasm32", target_vendor = "unknown"))]
+use crate::fmt::writer::wasm;
 use crate::fmt::{Target, WriteStyle};
 
 pub(in crate::fmt::writer) mod glob {}
@@ -33,6 +35,10 @@ impl BufferWriter {
         // This is so their output can be captured by `cargo test`
         let log = String::from_utf8_lossy(&buf.0);
 
+        #[cfg(all(target_arch = "wasm32", target_vendor = "unknown"))]
+        wasm::print(&log, self.target);
+
+        #[cfg(not(all(target_arch = "wasm32", target_vendor = "unknown")))]
         match self.target {
             Target::Stderr => eprint!("{}", log),
             Target::Stdout => print!("{}", log),

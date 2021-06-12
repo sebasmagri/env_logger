@@ -304,6 +304,7 @@ fn parse_spec(spec: &str) -> (Vec<Directive>, Option<inner::Filter>) {
         return (dirs, None);
     }
     if let Some(m) = mods {
+        let m = m.replace("-", "_");
         for s in m.split(',').map(|ss| ss.trim()) {
             if s.is_empty() {
                 continue;
@@ -698,6 +699,21 @@ mod tests {
         assert_eq!(dirs[1].level, LevelFilter::max());
 
         assert_eq!(dirs[2].name, Some("crate2".to_string()));
+        assert_eq!(dirs[2].level, LevelFilter::Debug);
+        assert!(filter.is_none());
+    }
+
+    #[test]
+    fn parse_spec_replaces_hyphens_in_mods() {
+        let (dirs, filter) = parse_spec("my-crate1::mod1=error,crate1::mod2,my-crate2=debug");
+        assert_eq!(dirs.len(), 3);
+        assert_eq!(dirs[0].name, Some("my_crate1::mod1".to_string()));
+        assert_eq!(dirs[0].level, LevelFilter::Error);
+
+        assert_eq!(dirs[1].name, Some("crate1::mod2".to_string()));
+        assert_eq!(dirs[1].level, LevelFilter::max());
+
+        assert_eq!(dirs[2].name, Some("my_crate2".to_string()));
         assert_eq!(dirs[2].level, LevelFilter::Debug);
         assert!(filter.is_none());
     }

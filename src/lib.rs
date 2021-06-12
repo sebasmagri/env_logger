@@ -71,8 +71,8 @@
 //! [2017-11-09T02:12:24Z INFO main] the answer was: 12
 //! ```
 //!
-//! If the binary name contains hyphens, you will need to replace
-//! them with underscores:
+//! If the binary name contains hyphens, they need to be replaced with underscores.
+//! The library handles this case automatically, in case you forget:
 //!
 //! ```{.bash}
 //! $ RUST_LOG=my_app ./my-app

@@ -71,11 +71,12 @@
 //! [2017-11-09T02:12:24Z INFO main] the answer was: 12
 //! ```
 //!
-//! If the binary name contains hyphens, you will need to replace
-//! them with underscores:
+//! Some package names may contain hyphens, this logger does the conversion for
+//! you so you don't have to. You are free to use the original form (`my-app`)
+//! or the canonical form (`my_app`).
 //!
 //! ```{.bash}
-//! $ RUST_LOG=my_app ./my-app
+//! $ RUST_LOG=my-app ./my-app
 //! [2017-11-09T02:12:24Z DEBUG my_app] this is a debug message
 //! [2017-11-09T02:12:24Z ERROR my_app] this is printed by default
 //! [2017-11-09T02:12:24Z INFO my_app] the answer was: 12

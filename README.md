@@ -47,6 +47,23 @@ $ RUST_LOG=info ./main
 [2018-11-03T06:09:06Z INFO  default] starting up
 ```
 
+To set the log level on a per module basis, module names can be declared as `path::to::module=level` in **`RUST_LOG`**.
+
+```console
+$ RUST_LOG=main=info ./main
+[2017-11-09T02:12:24Z ERROR main] this is printed by default
+[2017-11-09T02:12:24Z INFO main] the answer was: 12
+```
+
+When dealing with crate name with hyphens, either the original form (e.g., `my-app`) or the canonical form (e.g., `my_app`) works.
+
+```console
+$ RUST_LOG=my-app ./my-app   # `RUST_LOG=my_app ./my-app` also works
+[2017-11-09T02:12:24Z DEBUG my_app] this is a debug message
+[2017-11-09T02:12:24Z ERROR my_app] this is printed by default
+[2017-11-09T02:12:24Z INFO my_app] the answer was: 12
+```
+
 The letter case is not significant for the logging level names; e.g., `debug`,
 `DEBUG`, and `dEbuG` all represent the same logging level. Therefore, the
 previous example could also have been written this way, specifying the log

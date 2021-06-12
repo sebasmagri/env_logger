@@ -341,7 +341,7 @@ fn parse_spec(spec: &str) -> (Vec<Directive>, Option<inner::Filter>) {
                     }
                 };
             dirs.push(Directive {
-                name: name.map(|s| s.to_string()),
+                name: name.map(|s| s.replace("-", "_")),
                 level: log_level,
             });
         }
@@ -864,5 +864,17 @@ mod tests {
         assert_eq!(dirs[0].name, Some("crate1".to_string()));
         assert_eq!(dirs[0].level, LevelFilter::max());
         assert!(filter.is_some() && filter.unwrap().to_string() == "a*c");
+    }
+
+    #[test]
+    fn parse_spec_name_canonicalization() {
+        // accept binary names in both styles (`snake_case` and `kebab-case`)
+        let (dirs, _) = parse_spec("snake_case_crate=info,kebab-case-crate=debug");
+        assert_eq!(dirs.len(), 2);
+        assert_eq!(dirs[0].name, Some("snake_case_crate".to_string()));
+        assert_eq!(dirs[0].level, LevelFilter::Info);
+
+        assert_eq!(dirs[1].name, Some("kebab_case_crate".to_string()));
+        assert_eq!(dirs[1].level, LevelFilter::Debug);
     }
 }

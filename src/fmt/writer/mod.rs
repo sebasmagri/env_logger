@@ -105,6 +105,7 @@ impl Default for WriteStyle {
 pub(crate) struct Writer {
     inner: BufferWriter,
     write_style: WriteStyle,
+    target_pipe: Option<WritableTarget>,
 }
 
 impl Writer {
@@ -117,7 +118,11 @@ impl Writer {
     }
 
     pub(super) fn print(&self, buf: &Buffer) -> io::Result<()> {
-        self.inner.print(buf)
+        match &self.target_pipe {
+            Some(WritableTarget::Pipe(pipe)) => pipe.lock().unwrap().write_all(&buf.bytes()),
+            Some(_) => unreachable!(),
+            None => self.inner.print(buf)
+        }
     }
 }
 
@@ -190,15 +195,16 @@ impl Builder {
             color_choice => color_choice,
         };
 
-        let writer = match mem::take(&mut self.target) {
-            WritableTarget::Stderr => BufferWriter::stderr(self.is_test, color_choice),
-            WritableTarget::Stdout => BufferWriter::stdout(self.is_test, color_choice),
-            WritableTarget::Pipe(pipe) => BufferWriter::pipe(self.is_test, color_choice, pipe),
+        let (writer, target_pipe) = match mem::take(&mut self.target) {
+            WritableTarget::Stderr => (BufferWriter::stderr(self.is_test, color_choice), None),
+            WritableTarget::Stdout => (BufferWriter::stdout(self.is_test, color_choice), None),
+            WritableTarget::Pipe(pipe) => (BufferWriter::stderr(self.is_test, color_choice), Some(WritableTarget::Pipe(pipe))),
         };
 
         Writer {
             inner: writer,
             write_style: self.write_style,
+            target_pipe,
         }
     }
 }

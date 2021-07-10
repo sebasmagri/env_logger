@@ -1,4 +1,4 @@
-use std::{io, sync::Mutex};
+use std::io;
 
 use crate::fmt::{WritableTarget, WriteStyle};
 
@@ -23,16 +23,6 @@ impl BufferWriter {
         }
     }
 
-    pub(in crate::fmt::writer) fn pipe(
-        _is_test: bool,
-        _write_style: WriteStyle,
-        pipe: Box<Mutex<dyn io::Write + Send + 'static>>,
-    ) -> Self {
-        BufferWriter {
-            target: WritableTarget::Pipe(pipe),
-        }
-    }
-
     pub(in crate::fmt::writer) fn buffer(&self) -> Buffer {
         Buffer(Vec::new())
     }
@@ -42,10 +32,9 @@ impl BufferWriter {
         // instead of using the streams directly.
         // This is so their output can be captured by `cargo test`.
         match &self.target {
-            // Safety: If the target type is `Pipe`, `target_pipe` will always be non-empty.
-            WritableTarget::Pipe(pipe) => pipe.lock().unwrap().write_all(&buf.0)?,
             WritableTarget::Stdout => print!("{}", String::from_utf8_lossy(&buf.0)),
             WritableTarget::Stderr => eprint!("{}", String::from_utf8_lossy(&buf.0)),
+            WritableTarget::Pipe(_) => unreachable!(),
         }
 
         Ok(())
@@ -66,7 +55,6 @@ impl Buffer {
         Ok(())
     }
 
-    #[cfg(test)]
     pub(in crate::fmt) fn bytes(&self) -> &[u8] {
         &self.0
     }

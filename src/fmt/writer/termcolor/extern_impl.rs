@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use std::fmt;
 use std::io::{self, Write};
 use std::rc::Rc;
-use std::sync::Mutex;
 
 use log::Level;
 use termcolor::{self, ColorChoice, ColorSpec, WriteColor};
@@ -102,22 +101,6 @@ impl BufferWriter {
         }
     }
 
-    pub(in crate::fmt::writer) fn pipe(
-        is_test: bool,
-        write_style: WriteStyle,
-        pipe: Box<Mutex<dyn io::Write + Send + 'static>>,
-    ) -> Self {
-        BufferWriter {
-            // The inner Buffer is never printed from, but it is still needed to handle coloring and other formating
-            inner: termcolor::BufferWriter::stderr(write_style.into_color_choice()),
-            test_target: if is_test {
-                Some(WritableTarget::Pipe(pipe))
-            } else {
-                None
-            },
-        }
-    }
-
     pub(in crate::fmt::writer) fn buffer(&self) -> Buffer {
         Buffer {
             inner: self.inner.buffer(),
@@ -135,7 +118,7 @@ impl BufferWriter {
             match target {
                 WritableTarget::Stderr => eprint!("{}", log),
                 WritableTarget::Stdout => print!("{}", log),
-                WritableTarget::Pipe(pipe) => write!(pipe.lock().unwrap(), "{}", log)?,
+                WritableTarget::Pipe(_) => unreachable!(),
             }
 
             Ok(())

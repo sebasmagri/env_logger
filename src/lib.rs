@@ -223,11 +223,12 @@
 //! ## Tweaking the default format
 //!
 //! Parts of the default format can be excluded from the log output using the [`Builder`].
-//! The following example excludes the timestamp from the log output:
+//! The following example excludes the timestamp from the log output, and sets a prefix:
 //!
 //! ```
 //! env_logger::builder()
 //!     .format_timestamp(None)
+//!     .format_prefix("PREFIX")
 //!     .init();
 //! ```
 //!
@@ -645,6 +646,12 @@ impl Builder {
     /// Configures the timestamp to use nanosecond precision.
     pub fn format_timestamp_nanos(&mut self) -> &mut Self {
         self.format_timestamp(Some(fmt::TimestampPrecision::Nanos))
+    }
+
+    /// Configures the start of line prefix.
+    pub fn format_prefix(&mut self, prefix: &'static str) -> &mut Self {
+        self.format.format_prefix = Some(prefix);
+        self
     }
 
     /// Configures the end of line suffix.
